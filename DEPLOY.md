@@ -4,6 +4,32 @@ O sistema é servido em um único container: a API Express escuta na porta **300
 
 ---
 
+## Se deu "could not read Username for 'https://github.com'"
+
+O Coolify está clonando via **HTTPS** e não tem credenciais. Dá para resolver de dois jeitos:
+
+### 1) Deixar o repositório público (mais simples)
+
+- No GitHub: **NacionaesLEMC** → **Settings** → **General** → **Danger Zone** → **Change repository visibility** → **Make public**.
+- No Coolify não precisa mudar nada na URL; pode continuar `https://github.com/JuanDalvit1/NacionaesLEMC`. Só clicar em **Deploy** de novo.
+
+### 2) Manter privado e mudar a URL no Coolify
+
+**Onde mudar no Coolify:**
+
+1. Abra o **recurso/aplicação** (NacionaesLEMC) no Coolify.
+2. Vá na aba **Source** (ou **General** / **Repository**).
+3. No campo **Repository URL** (ou **Git Repository**), troque:
+   - **De:** `https://github.com/JuanDalvit1/NacionaesLEMC`  
+   - **Para:**
+     - **SSH:** `git@github.com:JuanDalvit1/NacionaesLEMC.git`  
+       (antes configure a Deploy Key no GitHub; veja “Opção A” abaixo.)
+     - **OU HTTPS com token:** `https://SEU_TOKEN_AQUI@github.com/JuanDalvit1/NacionaesLEMC`  
+       (troque `SEU_TOKEN_AQUI` pelo seu Personal Access Token do GitHub, ex.: `ghp_xxxx...`; veja “Opção B” abaixo.)
+4. Salve e clique em **Deploy** de novo.
+
+---
+
 ## Configuração única (depois é só clicar em Deploy)
 
 Para o Coolify conseguir clonar o repositório, configure **uma vez** uma das opções abaixo. As credenciais ficam **só no Coolify e no GitHub** (nunca no código).
