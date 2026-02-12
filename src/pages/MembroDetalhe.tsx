@@ -1,7 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { listarLancamentosKmPorNome } from '../lib/kms-data';
+import { listarLancamentosKmPorNome, somarLancamentos, formatKm } from '../lib/kms-data';
+import { evolucaoPorKm, kmParaProximaEvolucao } from '../lib/evolucao';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -17,9 +18,17 @@ import {
   CircularProgress,
   Chip,
 } from '@mui/material';
+import { keyframes } from '@emotion/react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RouteIcon from '@mui/icons-material/Route';
 import PersonIcon from '@mui/icons-material/Person';
+import GpsFixedIcon from '@mui/icons-material/GpsFixed';
+import StarIcon from '@mui/icons-material/Star';
+
+const starPulse = keyframes`
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255,215,0,0.5)); opacity: 1; }
+  50% { filter: drop-shadow(0 0 16px rgba(255,215,0,0.85)); opacity: 1; }
+`;
 
 const CAMPOS_PESSOAIS: { key: keyof Record<string, unknown>; label: string }[] = [
   { key: 'data_nascimento', label: 'Data de Nascimento' },
@@ -79,7 +88,7 @@ export default function MembroDetalhe() {
     queryFn: () => listarLancamentosKmPorNome(nomeMembro),
     enabled: !!membro && !!nomeMembro,
   });
-  const kmTotalPlanilha = lancamentosKm.reduce((s, l) => s + l.km, 0);
+  const kmTotalPlanilha = somarLancamentos(lancamentosKm);
 
   if (isLoading || !membro)
     return (
@@ -182,67 +191,137 @@ export default function MembroDetalhe() {
                 <RouteIcon fontSize="small" /> Quilometragem
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                    Lançamentos (soma)
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    minHeight: 100,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    background: (t) =>
+                      t.palette.mode === 'dark'
+                        ? 'linear-gradient(145deg, rgba(30,30,45,0.95) 0%, rgba(20,20,35,0.98) 100%)'
+                        : 'linear-gradient(145deg, rgba(40,40,60,0.92) 0%, rgba(25,25,45,0.96) 100%)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: -50,
+                      right: -50,
+                      width: 120,
+                      height: 120,
+                      borderRadius: '50%',
+                      background: 'radial-gradient(circle, rgba(94,53,177,0.15) 0%, transparent 70%)',
+                      pointerEvents: 'none',
+                    },
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'block', mb: 1.5, fontWeight: 600, letterSpacing: '0.05em' }}>
+                    Evolução
                   </Typography>
-                  <Box
-                    sx={{
-                      maxHeight: 120,
-                      overflowY: 'auto',
-                      overflowX: 'hidden',
-                      py: 0.5,
-                      '&::-webkit-scrollbar': { width: 6 },
-                      '&::-webkit-scrollbar-thumb': { borderRadius: 3, bgcolor: 'action.selected' },
-                    }}
-                  >
-                    {lancamentosKm.length === 0 ? (
-                      <Typography variant="body2" color="text.secondary">
-                        Nenhum lançamento na planilha.
-                      </Typography>
-                    ) : (
-                      <>
-                        {lancamentosKm.map((l, i) => (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', minHeight: 56 }}>
+                    {(() => {
+                      const evo = evolucaoPorKm(kmTotalPlanilha);
+                      if (!evo) {
+                        return (
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                            Acumule 500 km ou mais para sua primeira evolução.
+                          </Typography>
+                        );
+                      }
+                      return (
+                        <>
                           <Box
-                            key={i}
                             sx={{
                               display: 'flex',
-                              alignItems: 'baseline',
-                              gap: 0.5,
-                              flexWrap: 'wrap',
-                              py: 0.25,
-                              fontVariantNumeric: 'tabular-nums',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'rgba(255,255,255,0.95)',
+                              animation: `${starPulse} 2s ease-in-out infinite`,
                             }}
                           >
-                            <Typography component="span" variant="body2" fontWeight={600}>
-                              {i > 0 ? '+ ' : ''}
-                              {Number(l.km).toLocaleString('pt-BR')}
-                            </Typography>
-                            {(l.descricao || l.data_partida) && (
-                              <Typography component="span" variant="caption" color="text.secondary">
-                                {[
-                                  l.data_partida
-                                    ? format(parseISO(l.data_partida), 'dd/MM/yyyy', { locale: ptBR })
-                                    : '',
-                                  l.descricao,
-                                ]
-                                  .filter(Boolean)
-                                  .join(' — ')}
-                              </Typography>
+                            {evo.tipo === 'mira' ? (
+                              <GpsFixedIcon sx={{ fontSize: 32, color: '#ffd700', filter: 'drop-shadow(0 0 8px rgba(255,215,0,0.4))' }} />
+                            ) : (
+                              Array.from({ length: evo.estrelas ?? 0 }).map((_, i) => (
+                                <StarIcon
+                                  key={i}
+                                  sx={{
+                                    fontSize: 28,
+                                    color: '#ffd700',
+                                    filter: 'drop-shadow(0 0 6px rgba(255,215,0,0.5))',
+                                  }}
+                                />
+                              ))
                             )}
                           </Box>
-                        ))}
-                      </>
-                    )}
+                          <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.95)', fontWeight: 700, letterSpacing: '0.03em', mt: 1 }}>
+                            {evo.nome}
+                          </Typography>
+                        </>
+                      );
+                    })()}
                   </Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      textAlign: 'center',
+                      color: 'rgba(255,255,255,0.5)',
+                      mt: 1.5,
+                      lineHeight: 1.4,
+                      px: 1,
+                    }}
+                  >
+                    Para conquistar sua evolução precisa ter seu interstício de um ano para cada evolução.
+                  </Typography>
                 </Box>
-                <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                    Total (planilha KMs)
-                  </Typography>
-                  <Typography variant="h6" fontWeight={700} color="primary">
-                    {lancamentosKm.length > 0 ? `${Number(kmTotalPlanilha).toLocaleString('pt-BR')} km` : '–'}
-                  </Typography>
+                <Box
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 1,
+                    bgcolor: 'action.hover',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1.5,
+                  }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                      Total (planilha KMs)
+                    </Typography>
+                    <Typography variant="h6" fontWeight={700} color="primary">
+                      {lancamentosKm.length > 0 ? `${formatKm(kmTotalPlanilha)} km` : '–'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                    {(() => {
+                      const faltam = kmParaProximaEvolucao(kmTotalPlanilha);
+                      if (faltam === null) {
+                        const evo = evolucaoPorKm(kmTotalPlanilha);
+                        if (evo?.nome === 'BRASIL') {
+                          return (
+                            <Typography variant="caption" color="success.main" fontWeight={600}>
+                              Máximo alcançado
+                            </Typography>
+                          );
+                        }
+                        return (
+                          <Typography variant="caption" color="text.secondary">
+                            {kmTotalPlanilha < 500 ? `${500 - kmTotalPlanilha} km para 1ª evolução` : '–'}
+                          </Typography>
+                        );
+                      }
+                      return (
+                        <Typography variant="caption" color="text.secondary">
+                          {formatKm(faltam)} km para próxima evolução
+                        </Typography>
+                      );
+                    })()}
+                  </Box>
                 </Box>
               </Box>
             </CardContent>
@@ -276,13 +355,20 @@ export default function MembroDetalhe() {
                   }}
                 >
                   <Typography variant="body2" color="text.secondary">
-                    {l.data_partida
-                      ? format(parseISO(l.data_partida), 'dd/MM/yyyy', { locale: ptBR })
-                      : '–'}
+                    {(() => {
+                      if (!l.data_partida || typeof l.data_partida !== 'string') return '–';
+                      try {
+                        const d = parseISO(l.data_partida);
+                        if (Number.isNaN(d.getTime())) return '–';
+                        return format(d, 'dd/MM/yyyy', { locale: ptBR });
+                      } catch {
+                        return '–';
+                      }
+                    })()}
                   </Typography>
                   <Typography variant="body2">{l.descricao ?? '–'}</Typography>
                   <Chip
-                    label={`${Number(l.km).toLocaleString('pt-BR')} km`}
+                    label={`${formatKm(l.km)} km`}
                     size="small"
                     color="primary"
                     variant="outlined"

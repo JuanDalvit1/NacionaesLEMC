@@ -166,8 +166,10 @@ export async function runSync(sourceId?: string): Promise<{ ok: boolean; results
       const filteredHashes = new Set<string>();
       const filteredNomesKms = new Set<string>();
 
-      for (const row of filteredRows) {
-        const hash = rowHash(row);
+      for (let i = 0; i < filteredRows.length; i++) {
+        const row = filteredRows[i];
+        // Para fonte KMs: hash inclui índice da linha para não colapsar duplicatas (duas linhas iguais = dois registros).
+        const hash = isKmsSource ? rowHash({ ...row, __rowIndex: i }) : rowHash(row);
 
         const tbl = tableName?.toLowerCase?.() ?? '';
         if (tbl === 'nc_membros') {
@@ -177,7 +179,6 @@ export async function runSync(sourceId?: string): Promise<{ ok: boolean; results
           filteredHashes.add(hash);
           await upsertViagens(supabase, row, hash);
         } else if (isKmsSource) {
-          // Fonte "Controle de KM's" etc.: uma linha por registro do Sheets (996 linhas) em nc_data_dynamic
           filteredHashes.add(hash);
           const { error: dynErr } = await supabase.from('nc_data_dynamic').upsert(
             {

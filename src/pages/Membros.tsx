@@ -1,9 +1,11 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useTabelasHeader } from '../contexts/TabelasHeaderContext';
 import { fetchMemberRows, filterMembrosAtivosComNomeValido } from '../lib/membros-data';
 import { tipoMembro } from '../lib/membro-stats';
+import { getKmTotaisPorNomes } from '../lib/kms-data';
+import { evolucaoPorKm } from '../lib/evolucao';
 import {
   Box,
   Typography,
@@ -12,7 +14,10 @@ import {
   Grid,
   CircularProgress,
   Chip,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import GroupsIcon from '@mui/icons-material/Groups';
 import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
@@ -44,7 +49,13 @@ function fmtData(v: unknown): string {
   return s;
 }
 
-function MembroCard({ m }: { m: Record<string, unknown> }) {
+function MembroCard({
+  m,
+  evolucaoNome,
+}: {
+  m: Record<string, unknown>;
+  evolucaoNome?: string | null;
+}) {
   const tipo = tipoMembro(m);
   const nome = String(m.nome_colete ?? m.nome_completo ?? m.NOME_COLETE ?? m.NOME_COMPLETO ?? '-');
   const graduacao = String(m.graduacao ?? m.GRADUACAO ?? '-');
@@ -74,10 +85,20 @@ function MembroCard({ m }: { m: Record<string, unknown> }) {
     >
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', '&:last-child': { pb: 2 } }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 1 }}>
-          <Typography variant="subtitle1" fontWeight={700} component="span" sx={{ flex: 1, lineHeight: 1.3 }}>
+          <Typography variant="subtitle1" fontWeight={700} component="span" sx={{ flex: 1, lineHeight: 1.3, minWidth: 0 }}>
             {nome}
           </Typography>
-          <ChevronRightIcon sx={{ fontSize: 20, color: 'text.secondary', flexShrink: 0 }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+            {evolucaoNome && (
+              <Chip
+                size="small"
+                label={evolucaoNome}
+                variant="outlined"
+                sx={{ height: 22, fontSize: '0.7rem', borderColor: 'primary.main', color: 'primary.main' }}
+              />
+            )}
+            <ChevronRightIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+          </Box>
         </Box>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
           <Chip
@@ -124,18 +145,61 @@ export default function Membros() {
     [membrosRaw]
   );
 
+  const nomesMembros = useMemo(
+    () =>
+      membrosList.map((m) =>
+        String(m.nome_colete ?? m.nome_completo ?? m.NOME_COLETE ?? m.NOME_COMPLETO ?? '').trim()
+      ).filter(Boolean),
+    [membrosList]
+  );
+
+  const { data: kmTotaisPorNome = {} } = useQuery({
+    queryKey: ['NC_kms_totais_membros', nomesMembros.join('|')],
+    queryFn: () => getKmTotaisPorNomes(nomesMembros),
+    enabled: nomesMembros.length > 0,
+  });
+
+  const evolucaoPorNome = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const nome of nomesMembros) {
+      const total = kmTotaisPorNome[nome] ?? 0;
+      const evo = evolucaoPorKm(total);
+      if (evo?.nome) map[nome] = evo.nome;
+    }
+    return map;
+  }, [nomesMembros, kmTotaisPorNome]);
+
+  const [busca, setBusca] = useState('');
+
+  const membrosFiltrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    if (!termo) return membrosList;
+    return membrosList.filter((m) => {
+      const nome = String(
+        m.nome_colete ?? m.nome_completo ?? m.NOME_COLETE ?? m.NOME_COMPLETO ?? ''
+      ).trim().toLowerCase();
+      const graduacao = String(m.graduacao ?? m.GRADUACAO ?? '').toLowerCase();
+      const evo = (evolucaoPorNome[nome] ?? '').toLowerCase();
+      return (
+        nome.includes(termo) ||
+        graduacao.includes(termo) ||
+        evo.includes(termo)
+      );
+    });
+  }, [membrosList, busca, evolucaoPorNome]);
+
   const membrosPorTipo = useMemo(() => {
     const map: Record<TipoOrdem, Record<string, unknown>[]> = {
       Full: [],
       '14': [],
       PP: [],
     };
-    for (const m of membrosList) {
+    for (const m of membrosFiltrados) {
       const tipo = tipoMembro(m);
       map[tipo].push(m);
     }
     return map;
-  }, [membrosList]);
+  }, [membrosFiltrados]);
 
   if (isLoading)
     return (
@@ -146,6 +210,23 @@ export default function Membros() {
 
   return (
     <Box>
+      <TextField
+        fullWidth
+        size="small"
+        placeholder="Buscar por nome, graduação ou evolução..."
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        sx={{ mb: 3 }}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+          },
+        }}
+      />
       {ORDEM_PIRAMIDE.map((tipo) => {
         const membros = membrosPorTipo[tipo];
         if (membros.length === 0) return null;
@@ -175,11 +256,17 @@ export default function Membros() {
               />
             </Box>
             <Grid container spacing={2}>
-              {membros.map((m) => (
-                <Grid key={String(m.id)} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                  <MembroCard m={m as Record<string, unknown>} />
-                </Grid>
-              ))}
+              {membros.map((m) => {
+                const nome = String(m.nome_colete ?? m.nome_completo ?? m.NOME_COLETE ?? m.NOME_COMPLETO ?? '').trim();
+                return (
+                  <Grid key={String(m.id)} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+                    <MembroCard
+                      m={m as Record<string, unknown>}
+                      evolucaoNome={nome ? evolucaoPorNome[nome] ?? null : null}
+                    />
+                  </Grid>
+                );
+              })}
             </Grid>
           </Box>
         );
