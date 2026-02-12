@@ -13,7 +13,6 @@ import {
   Grid,
   List,
   ListItem,
-  ListItemText,
   Button,
   CircularProgress,
   Chip,
@@ -122,7 +121,7 @@ export default function MembroDetalhe() {
           <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem' } }}>
             {nomeExibido}
           </Typography>
-          {m.graduacao && String(m.graduacao).trim() && (
+          {String(m.graduacao ?? '').trim() ? (
             <Chip
               label={String(m.graduacao)}
               size="small"
@@ -130,15 +129,15 @@ export default function MembroDetalhe() {
               variant="outlined"
               sx={{ fontWeight: 600 }}
             />
-          )}
-          {m.situacao && String(m.situacao).trim() && (
+          ) : null}
+          {String(m.situacao ?? '').trim() ? (
             <Chip
               label={String(m.situacao)}
               size="small"
               color={String(m.situacao).toUpperCase() === 'ATIVO' ? 'success' : 'default'}
               variant="outlined"
             />
-          )}
+          ) : null}
         </Box>
         <Typography variant="body2" color="text.secondary">
           Ficha do membro

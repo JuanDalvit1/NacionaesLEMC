@@ -114,10 +114,11 @@ function KpiCard({
   );
 }
 
-function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; payload?: { name: string } }[]; label?: string }) {
+type TooltipPayloadItem = { name?: string; value?: number; payload?: { name?: string } };
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: readonly TooltipPayloadItem[]; label?: string | number }) {
   if (!active || !payload?.length) return null;
   const item = payload[0];
-  const name = item?.payload?.name ?? label ?? '';
+  const name = item?.payload?.name ?? (label != null ? String(label) : '');
   const value = item?.value ?? 0;
   return (
     <Box
@@ -357,13 +358,13 @@ export default function Dashboard() {
                         <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip content={({ active, payload, label }) => <ChartTooltip active={active} payload={payload} label={label} />} contentStyle={{ borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)' }} />
+                    <Tooltip content={({ active, payload, label }) => <ChartTooltip active={active} payload={payload ?? undefined} label={label != null ? String(label) : undefined} />} contentStyle={{ borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)' }} />
                     <Legend
                       layout="horizontal"
                       align="center"
                       verticalAlign="bottom"
                       wrapperStyle={{ fontSize: 10 }}
-                      formatter={(value, entry) => (
+                      formatter={(value) => (
                         <span style={{ color: 'inherit', marginRight: 8 }}>{value}</span>
                       )}
                     />
@@ -390,7 +391,7 @@ export default function Dashboard() {
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
                       <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
                       <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 11 }} />
-                      <Tooltip content={({ active, payload, label }) => <ChartTooltip active={active} payload={payload} label={label} />} contentStyle={{ borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)' }} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+                      <Tooltip content={({ active, payload, label }) => <ChartTooltip active={active} payload={payload ?? undefined} label={label != null ? String(label) : undefined} />} contentStyle={{ borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)' }} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
                       <Bar dataKey="value" name="Membros" radius={[0, 6, 6, 0]} maxBarSize={28}>
                         {porTipoSanguineo.map((_, idx) => (
                           <Cell key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
