@@ -75,7 +75,7 @@ cp .env.example .env
 | `SUPABASE_URL` | URL do projeto (backend/sync) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (escrita no Supabase) |
 | `GOOGLE_SHEETS_API_KEY` | API Key do Google Cloud (planilhas Google) |
-| `PORT` | Porta do servidor de sync (opcional, padrão 3001) |
+| `PORT` | Porta do servidor (opcional: 3001 em dev; em produção/Docker use 3000) |
 
 ---
 
@@ -101,7 +101,7 @@ npm run preview
 npm run sync
 ```
 
-O Vite faz proxy de `/api` para `localhost:3001` em desenvolvimento; o servidor de sync precisa estar rodando para o admin sincronizar fontes.
+O Vite faz proxy de `/api` para o servidor em desenvolvimento; o servidor de sync precisa estar rodando para o admin sincronizar fontes. Em produção (Docker/Coolify), a API e o frontend são servidos pelo mesmo processo na porta 3000 (ver [DEPLOY.md](./DEPLOY.md)).
 
 ---
 

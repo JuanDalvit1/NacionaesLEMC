@@ -156,6 +156,15 @@ app.post('/api/dashboard-stats', async (req, res) => {
   }
 });
 
+// SPA: servir dist em produção (Docker/Coolify) e fallback para index.html
+const distPath = path.resolve(__dirname, '..', 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
 cron.schedule('0 */6 * * *', async () => {
   console.log('[Cron] Executando sync...');
   try {
@@ -166,7 +175,7 @@ cron.schedule('0 */6 * * *', async () => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3000;
 if (!getGoogleSheetsApiKey()) {
   console.warn(
     '[Server] GOOGLE_SHEETS_API_KEY não definida. Fontes Google Sheets e sync falharão. Adicione em .env ou .env.local na raiz do projeto.'
