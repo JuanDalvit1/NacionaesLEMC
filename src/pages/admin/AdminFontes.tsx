@@ -166,7 +166,10 @@ export default function AdminFontes() {
         }),
       });
       const data = await parseJsonResponse<{ online?: boolean; error?: string }>(res);
-      setStatusResult((prev) => ({ ...prev, [s.id]: data }));
+      setStatusResult((prev) => ({
+        ...prev,
+        [s.id]: { online: data.online ?? false, error: data.error },
+      }));
     } catch (e) {
       setStatusResult((prev) => ({
         ...prev,
