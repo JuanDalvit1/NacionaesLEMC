@@ -33,6 +33,9 @@ import { useThemeMode } from '../contexts/ThemeContext';
 const DRAWER_WIDTH_EXPANDED = 260;
 const DRAWER_WIDTH_COLLAPSED = 72;
 
+/** Versão exibida no header (manter alinhada ao package.json). */
+const APP_VERSION = '1.0.0';
+
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
   { to: '/tabelas', label: 'Tabelas', icon: <TableChartIcon /> },
@@ -370,6 +373,19 @@ export default function Layout() {
                 ) : null}
               </>
             ) : null}
+            <Box sx={{ marginLeft: 'auto', alignSelf: 'center' }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  opacity: 0.5,
+                  color: 'text.secondary',
+                  fontSize: '0.7rem',
+                  fontWeight: 500,
+                }}
+              >
+                v{APP_VERSION}
+              </Typography>
+            </Box>
           </Toolbar>
         </AppBar>
         <Box

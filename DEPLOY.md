@@ -126,9 +126,9 @@ A API expõe `GET /api/health`, que retorna `{ "status": "ok" }`. Pode ser usada
 
 ---
 
-## POST /api/sync retorna 405 (Method Not Allowed)
+## POST /api/sync retorna 405 ou "Unexpected end of JSON input"
 
-Se o frontend recebe **405** ao chamar `POST /api/sync`, em geral o **proxy reverso** (Coolify/Nginx/Traefik) à frente do container está bloqueando ou não encaminhando o método POST.
+Se ao **sincronizar/atualizar fontes** no sistema lançado (Coolify) aparecer **405** ou o erro **"Failed to execute 'json' on 'Response': Unexpected end of JSON input"**, em geral o **proxy reverso** (Caddy/Nginx/Traefik) à frente do container está bloqueando POST ou devolvendo resposta vazia. Faça um **novo deploy** após ajustar o proxy para que o frontend use a versão que exibe mensagens claras (e evita esse erro).
 
 **O que fazer:**
 

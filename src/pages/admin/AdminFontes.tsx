@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { parseJsonResponse } from '../../lib/api';
 import {
   Box,
   Typography,
@@ -164,7 +165,7 @@ export default function AdminFontes() {
           sheet_id: s.sheet_id || extractGidFromUrl(s.url),
         }),
       });
-      const data = await res.json();
+      const data = await parseJsonResponse<{ online?: boolean; error?: string }>(res);
       setStatusResult((prev) => ({ ...prev, [s.id]: data }));
     } catch (e) {
       setStatusResult((prev) => ({
@@ -516,9 +517,9 @@ function ColunasDialog({
           start_row: source.start_row ?? 6,
         }),
       });
-      const data = await res.json();
+      const data = await parseJsonResponse<{ columns?: Array<{ position: string; header: string }>; error?: string }>(res);
       if (!res.ok) throw new Error(data.error || 'Erro ao buscar cabeçalhos');
-      const { columns } = data as { columns: Array<{ position: string; header: string }> };
+      const { columns } = data;
       if (!Array.isArray(columns) || columns.length === 0) {
         setImportError('Nenhuma coluna encontrada na linha de cabeçalho.');
         return;

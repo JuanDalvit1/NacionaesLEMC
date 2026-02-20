@@ -42,12 +42,16 @@ export default function AdminSync() {
       const data = await parseJsonResponse<{ results?: Record<string, string>; error?: string }>(res);
       setResult(data.results ?? { error: data.error || 'Erro desconhecido' });
     } catch (err) {
-      setResult({
-        error:
-          err instanceof Error
-            ? err.message
-            : 'Falha ao chamar API. Verifique se o servidor está rodando (npm run server).',
-      });
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Falha ao chamar API. Verifique se o servidor está rodando (npm run server).';
+      // Em produção (Coolify), proxy pode devolver corpo vazio → "Unexpected end of JSON input"
+      const hint =
+        /json|Unexpected end|resposta vazia/i.test(msg)
+          ? ' No Coolify: configure o proxy para encaminhar POST em /api (remova caddy_0.try_files ou use Traefik). Veja DEPLOY.md.'
+          : '';
+      setResult({ error: msg + hint });
     } finally {
       setSyncing(false);
     }
