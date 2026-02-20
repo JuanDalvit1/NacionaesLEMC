@@ -324,7 +324,7 @@ export default function Dashboard() {
           <KpiCard
             title="14"
             value={contadores.membros14}
-            subtitle="Membros 14"
+            subtitle="Nunca Serão"
             icon={<PeopleIcon fontSize="medium" />}
             color="#ed6c02"
           />

@@ -34,7 +34,7 @@ const DRAWER_WIDTH_EXPANDED = 260;
 const DRAWER_WIDTH_COLLAPSED = 72;
 
 /** Versão exibida no header (manter alinhada ao package.json). */
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.3';
 
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -341,7 +341,7 @@ export default function Layout() {
                   <Box sx={{ display: 'flex', gap: { xs: 0.75, sm: 1 }, flexWrap: 'wrap', alignItems: 'stretch' }}>
                     {[
                       { label: 'Total', value: tabelasHeader!.indicadores?.total ?? 0 },
-                      { label: 'Membros 14', value: tabelasHeader!.indicadores?.membros14 ?? 0 },
+                      { label: 'Nunca Serão', value: tabelasHeader!.indicadores?.membros14 ?? 0 },
                       { label: 'Membros PP', value: tabelasHeader!.indicadores?.pp ?? 0 },
                       { label: 'Membros Full', value: tabelasHeader!.indicadores?.full ?? 0 },
                     ].map(({ label, value }) => (
