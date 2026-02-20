@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { parseJsonResponse } from '../lib/api';
 
 const API_BASE = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || '');
 import { useTabelasHeader } from '../contexts/TabelasHeaderContext';
@@ -283,7 +284,7 @@ export default function Tabelas() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sourceId: sid }),
       });
-      const data = await res.json();
+      const data = await parseJsonResponse<{ ok?: boolean; error?: string; results?: Record<string, string> }>(res);
       if (!res.ok) throw new Error(data.error ?? data.results?.error ?? 'Falha no sync');
       return data as { ok: boolean; results: Record<string, string> };
     },
@@ -393,7 +394,7 @@ export default function Tabelas() {
 
   useEffect(() => {
     if (!indicadores) return;
-    fetch('/api/dashboard-stats', {
+    fetch(`${API_BASE}/api/dashboard-stats`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

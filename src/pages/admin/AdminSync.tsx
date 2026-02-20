@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { parseJsonResponse } from '../../lib/api';
 import {
   Box,
   Typography,
@@ -38,7 +39,7 @@ export default function AdminSync() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
-      const data = await res.json();
+      const data = await parseJsonResponse<{ results?: Record<string, string>; error?: string }>(res);
       setResult(data.results ?? { error: data.error || 'Erro desconhecido' });
     } catch (err) {
       setResult({

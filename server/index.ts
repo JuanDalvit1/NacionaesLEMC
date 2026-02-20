@@ -129,6 +129,38 @@ app.post('/api/sheet-headers', async (req, res) => {
   }
 });
 
+/** Proxy para Supabase: evita bloqueio de Private Network Access quando o frontend é servido de IP público e o Supabase está em rede privada (ex.: 192.168.x.x). */
+app.use('/api/supabase', async (req, res) => {
+  const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
+  if (!supabaseUrl) {
+    res.status(502).json({ error: 'Supabase URL não configurada no servidor' });
+    return;
+  }
+  const pathAndQuery = req.url || '/';
+  const targetUrl = `${supabaseUrl}${pathAndQuery}`;
+  const headers: Record<string, string> = {};
+  const forwardHeaders = ['apikey', 'authorization', 'content-type', 'x-client-info', 'prefer', 'accept', 'accept-encoding'];
+  for (const k of forwardHeaders) {
+    const v = req.headers[k];
+    if (v) headers[k] = Array.isArray(v) ? v[0] : v;
+  }
+  let body: string | undefined;
+  if (req.body != null && ['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    body = typeof req.body === 'string' ? req.body : (req.body instanceof Buffer ? req.body.toString() : JSON.stringify(req.body));
+  }
+  try {
+    const response = await fetch(targetUrl, { method: req.method, headers, body });
+    res.status(response.status);
+    const contentType = response.headers.get('content-type');
+    if (contentType) res.setHeader('content-type', contentType);
+    const text = await response.text();
+    res.send(text);
+  } catch (err) {
+    console.error('[Proxy Supabase]', err);
+    res.status(502).json({ error: 'Falha ao conectar no Supabase', detail: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 app.post('/api/dashboard-stats', async (req, res) => {
   try {
     const { total, full, pp, membros_14 } = req.body;
@@ -160,7 +192,8 @@ app.post('/api/dashboard-stats', async (req, res) => {
 const distPath = path.resolve(__dirname, '..', 'dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
-  app.get('*', (_req, res) => {
+  // Express 5 / path-to-regexp não aceita '*' sozinho; usar regex para catch-all
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }

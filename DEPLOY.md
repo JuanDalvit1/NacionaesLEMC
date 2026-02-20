@@ -107,6 +107,10 @@ As variáveis `VITE_*` são embutidas no build no momento do `docker build`; se 
 
 Para **build no Coolify**: adicione as variáveis no passo de Build do serviço para que estejam disponíveis durante `docker build` (ex.: Build Arguments ou Environment no Coolify).
 
+### Supabase em rede privada (ex.: 192.168.x.x)
+
+Se o frontend for acessado por um endereço público (ex.: `http://177.11.146.114:8120`) e o Supabase estiver em rede privada (ex.: `http://192.168.1.220:54321`), o navegador bloqueia as requisições diretas (política *Private Network Access*). O app contorna isso **automaticamente**: no navegador, quando detecta que a URL do Supabase é privada, usa o proxy `/api/supabase` do próprio servidor (mesma origem). O backend (Express) faz a requisição ao Supabase na rede interna. Não é necessário alterar variáveis de ambiente; basta que `SUPABASE_URL` no servidor aponte para o Supabase real.
+
 ## Build local (testar a imagem)
 
 ```bash
@@ -119,6 +123,37 @@ Acesse `http://localhost:8120`.
 ## Health check
 
 A API expõe `GET /api/health`, que retorna `{ "status": "ok" }`. Pode ser usada no Coolify como health check path: `/api/health`.
+
+---
+
+## POST /api/sync retorna 405 (Method Not Allowed)
+
+Se o frontend recebe **405** ao chamar `POST /api/sync`, em geral o **proxy reverso** (Coolify/Nginx/Traefik) à frente do container está bloqueando ou não encaminhando o método POST.
+
+**O que fazer:**
+
+1. No Coolify (ou no proxy que aponta para o app), garanta que **todas** as requisições para o serviço (incluindo POST, PUT, PATCH, OPTIONS) sejam encaminhadas para o container na porta 3000 — não apenas GET.
+2. Se houver regra do tipo “servir arquivos estáticos primeiro” ou “só encaminhar GET”, ajuste para que caminhos que começam com **`/api/`** sejam sempre repassados ao backend (Node), com o mesmo método e corpo da requisição.
+3. Depois de alterar a configuração do proxy, teste de novo o sync a partir da interface.
+
+### Coolify com proxy Caddy (405 persiste após remover try_files)
+
+Se o Coolify usa Caddy e os logs mostram `"Allow":["GET, HEAD"]`, a label **`caddy_0.try_files={path} /index.html /index.php`** faz o Caddy aceitar só GET/HEAD. O Coolify pode **recolocar** essas labels a cada deploy. Duas saídas:
+
+**Opção A – Usar Traefik no servidor (recomendado)**  
+1. No Coolify, vá em **Server** → **Proxy** (ou configuração do proxy do servidor).  
+2. Ative **“Generate labels only for Traefik”** (ou use Traefik como proxy em vez de Caddy).  
+3. Faça **Redeploy** do recurso. Com Traefik, as rotas costumam encaminhar todos os métodos (GET, POST, etc.) para o container e o 405 tende a sumir.
+
+**Opção B – Manter Caddy e priorizar /api**  
+Adicione **novas** Container Labels no recurso (não apague as que o Coolify gera) para que o Caddy trate `/api` antes do `try_files`:
+
+- `caddy_0.handle_path.1=/api*`  
+- `caddy_0.handle_path.1_reverse_proxy={{upstreams 3000}}`
+
+Salve, faça Redeploy e teste. Se o Coolify usar outra numeração (ex.: `handle_path.0` já existente), ajuste para um número que não conflite com as labels já listadas (ex.: `.2` em vez de `.1`). O objetivo é existir um bloco que faça `handle_path /api*` com `reverse_proxy` para a porta 3000.
+
+Não marque **“Is it a static site?”** para este app, pois ele tem API (POST `/api/sync`, `/api/dashboard-stats`).
 
 ---
 
