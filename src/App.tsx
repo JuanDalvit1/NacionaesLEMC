@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@mui/material/styles';
@@ -7,12 +7,16 @@ import { getTheme } from './theme';
 import { ThemeModeProvider, useThemeMode } from './contexts/ThemeContext';
 import { TabelasHeaderProvider } from './contexts/TabelasHeaderContext';
 import Layout from './components/Layout';
+import LoadingScreen from './components/LoadingScreen';
 import Dashboard from './pages/Dashboard';
 import Tabelas from './pages/Tabelas';
 import Aniversariantes from './pages/Aniversariantes';
 import Membros from './pages/Membros';
 import MembroDetalhe from './pages/MembroDetalhe';
 import AdminPage from './pages/AdminPage';
+
+const LOADING_DURATION_MS = 5000;
+const LOADING_FADEOUT_MS = 850;
 
 const queryClient = new QueryClient();
 
@@ -45,10 +49,30 @@ function AppWithTheme() {
 }
 
 function App() {
+  const [loading, setLoading] = useState(true);
+  const [exiting, setExiting] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setExiting(true), LOADING_DURATION_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!exiting) return;
+    const t = setTimeout(() => setLoading(false), LOADING_FADEOUT_MS);
+    return () => clearTimeout(t);
+  }, [exiting]);
+
   return (
-    <ThemeModeProvider>
-      <AppWithTheme />
-    </ThemeModeProvider>
+    <>
+      {/* App montado durante exiting para aparecer por baixo do fade out */}
+      {(!loading || exiting) && (
+        <ThemeModeProvider>
+          <AppWithTheme />
+        </ThemeModeProvider>
+      )}
+      {loading && <LoadingScreen exiting={exiting} />}
+    </>
   );
 }
 

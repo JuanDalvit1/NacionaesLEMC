@@ -34,7 +34,7 @@ const DRAWER_WIDTH_EXPANDED = 260;
 const DRAWER_WIDTH_COLLAPSED = 72;
 
 /** Versão exibida no header (manter alinhada ao package.json). */
-const APP_VERSION = '1.0.3';
+const APP_VERSION = '1.0.4';
 
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
@@ -87,22 +87,23 @@ export default function Layout() {
         <Box
           component="img"
           src={logoImg}
-          alt="Nacionaes lemc"
+          alt="Nacionaes LEMC"
           sx={{
             height: collapsed ? 52 : 44,
             width: 'auto',
             objectFit: 'contain',
+            flexShrink: 0,
           }}
         />
         {!collapsed && (
-          <Typography
-            variant="h6"
-            component="span"
-            noWrap
-            sx={{ ml: 1.5, fontWeight: 700, color: 'text.primary' }}
-          >
-            NACIONAES LEMC
-          </Typography>
+          <Box sx={{ ml: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', minWidth: 0 }}>
+            <Typography variant="subtitle2" noWrap sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1.25, fontSize: '1rem' }}>
+              SYSREG-GO
+            </Typography>
+            <Typography variant="caption" noWrap sx={{ fontWeight: 600, color: 'text.secondary', lineHeight: 1.3, fontSize: '0.875rem' }}>
+              1ª REGIONAL GOIÁS
+            </Typography>
+          </Box>
         )}
       </Box>
 
@@ -223,8 +224,11 @@ export default function Layout() {
               height: '100%',
               borderRight: 1,
               borderColor: 'divider',
+              borderRadius: 0,
               borderTopLeftRadius: 0,
               borderBottomLeftRadius: 0,
+              borderTopRightRadius: 0,
+              borderBottomRightRadius: 0,
               bgcolor: (t: { palette: { mode: string } }) =>
                 t.palette.mode === 'dark' ? 'rgba(30,30,30,0.9)' : 'rgba(255,255,255,0.92)',
               backdropFilter: 'blur(12px)',
@@ -234,10 +238,15 @@ export default function Layout() {
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', pt: 2, px: 1, pb: 2 }}>
             <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', mb: 2, px: 1 }}>
-              <Box component="img" src={logoImg} alt="Nacionaes" sx={{ height: 44, width: 'auto', objectFit: 'contain' }} />
-              <Typography variant="h6" component="span" noWrap sx={{ ml: 1.5, fontWeight: 700, color: 'text.primary' }}>
-                NACIONAES LEMC
-              </Typography>
+              <Box component="img" src={logoImg} alt="Nacionaes LEMC" sx={{ height: 44, width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+              <Box sx={{ ml: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', minWidth: 0 }}>
+                <Typography variant="subtitle2" noWrap sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1.25, fontSize: '1rem' }}>
+                  SYSREG-GO
+                </Typography>
+                <Typography variant="caption" noWrap sx={{ fontWeight: 600, color: 'text.secondary', lineHeight: 1.3, fontSize: '0.875rem' }}>
+                  1ª REGIONAL GOIÁS
+                </Typography>
+              </Box>
             </Box>
             <List sx={{ flex: 1, py: 0 }}>
               {nav.map(({ to, label, icon }) => (
@@ -284,8 +293,11 @@ export default function Layout() {
               height: '100%',
               borderRight: 1,
               borderColor: 'divider',
+              borderRadius: 0,
               borderTopLeftRadius: 0,
               borderBottomLeftRadius: 0,
+              borderTopRightRadius: 0,
+              borderBottomRightRadius: 0,
               bgcolor: (t: { palette: { mode: string } }) =>
                 t.palette.mode === 'dark' ? 'rgba(30,30,30,0.9)' : 'rgba(255,255,255,0.92)',
               backdropFilter: 'blur(12px)',
