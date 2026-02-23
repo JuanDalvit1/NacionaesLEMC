@@ -14,6 +14,7 @@ import Aniversariantes from './pages/Aniversariantes';
 import Membros from './pages/Membros';
 import MembroDetalhe from './pages/MembroDetalhe';
 import AdminPage from './pages/AdminPage';
+import AdminGuard from './components/AdminGuard';
 
 const LOADING_DURATION_MS = 5000;
 const LOADING_FADEOUT_MS = 850;
@@ -37,7 +38,7 @@ function AppWithTheme() {
                 <Route path="aniversariantes" element={<Aniversariantes />} />
                 <Route path="membros" element={<Membros />} />
                 <Route path="membros/:id" element={<MembroDetalhe />} />
-                <Route path="admin" element={<AdminPage />} />
+                <Route path="admin" element={<AdminGuard><AdminPage /></AdminGuard>} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -161,6 +161,45 @@ app.use('/api/supabase', async (req, res) => {
   }
 });
 
+/** Email e senha do único usuário admin (Auth Supabase). Usado para criar o usuário e validar acesso. */
+const ADMIN_AUTH_EMAIL = 'talitom@admin.nacionaeslemc.local';
+const ADMIN_AUTH_PASSWORD = 'Tdc160!@';
+
+/** Cria o usuário admin no Supabase Auth (idempotente). Requer SUPABASE_SERVICE_ROLE_KEY. */
+app.post('/api/admin/ensure-admin-user', async (_req, res) => {
+  try {
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!key) {
+      return res.status(500).json({ ok: false, error: 'SUPABASE_SERVICE_ROLE_KEY não configurada' });
+    }
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    if (!url) {
+      return res.status(500).json({ ok: false, error: 'SUPABASE_URL não configurada' });
+    }
+    const supabaseAdmin = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email: ADMIN_AUTH_EMAIL,
+      password: ADMIN_AUTH_PASSWORD,
+      email_confirm: true,
+      user_metadata: { name: 'Talitom' },
+    });
+    if (error) {
+      if (error.message?.includes('already been registered') || error.message?.toLowerCase().includes('already exists')) {
+        return res.json({ ok: true, message: 'Usuário admin já existe' });
+      }
+      return res.status(400).json({ ok: false, error: error.message });
+    }
+    res.json({ ok: true, message: 'Usuário admin criado', user_id: data.user?.id });
+  } catch (err) {
+    res.status(500).json({
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
 app.post('/api/dashboard-stats', async (req, res) => {
   try {
     const { total, full, pp, membros_14 } = req.body;
