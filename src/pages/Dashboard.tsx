@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useTabelasHeader } from '../contexts/TabelasHeaderContext';
 import { fetchMemberRows, filterMembrosAtivosComNomeValido } from '../lib/membros-data';
 import { contarMembros, tipoMembro } from '../lib/membro-stats';
+import { getTotalGeralKmPlanilha, getUltimasViagensPlanilha } from '../lib/kms-data';
 import { supabase } from '../lib/supabase';
 import { format, parseISO, isBefore, isAfter, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -253,27 +254,14 @@ export default function Dashboard() {
   );
 
   const { data: viagensRecentes = [] } = useQuery({
-    queryKey: ['NC_viagens_recentes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('nc_viagens')
-        .select('nome_apelido, descricao_trajeto, data_partida, km_considerado')
-        .order('data_partida', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return (data ?? []) as Record<string, unknown>[];
-    },
+    queryKey: ['NC_viagens_recentes_planilha', 3],
+    queryFn: () => getUltimasViagensPlanilha(3),
   });
 
   const { data: kmTotal } = useQuery({
-    queryKey: ['NC_kms_total'],
+    queryKey: ['NC_kms_total_planilha'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('nc_kms_totais').select('km_total');
-      if (error) throw error;
-      const total = (data ?? []).reduce((s: number, r: { km_total?: string | number }) => {
-        const v = Number(r?.km_total ?? 0);
-        return s + (isNaN(v) ? 0 : v);
-      }, 0);
+      const total = await getTotalGeralKmPlanilha();
       return Math.round(total);
     },
   });
@@ -547,9 +535,9 @@ export default function Dashboard() {
                 {viagensRecentes.length > 0 ? (
                   <Box sx={{ mt: 1 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-                      Últimas 3 viagens (por data)
+                      Últimas 3 viagens (planilha, por data)
                     </Typography>
-                    {viagensRecentes.slice(0, 3).map((v, i) => (
+                    {viagensRecentes.map((v, i) => (
                       <Box
                         key={i}
                         sx={{
@@ -558,18 +546,22 @@ export default function Dashboard() {
                           gap: 0.5,
                           flexWrap: 'wrap',
                           py: 0.25,
-                          borderBottom: i < Math.min(3, viagensRecentes.length) - 1 ? '1px solid' : 0,
+                          borderBottom: i < viagensRecentes.length - 1 ? '1px solid' : 0,
                           borderColor: 'divider',
                         }}
                       >
                         <Typography variant="body2" fontWeight={500}>
-                          {String(v?.nome_apelido ?? v?.descricao_trajeto ?? '-')}
+                          {String(v.nome_apelido || v.descricao_trajeto || '-')}
                         </Typography>
-                        {v?.data_partida != null && (
-                          <Typography variant="caption" color="text.secondary">
-                            {format(new Date(String(v.data_partida)), 'dd/MM/yyyy', { locale: ptBR })}
-                          </Typography>
-                        )}
+                        {v.data_partida != null && (() => {
+                          const date = new Date(String(v.data_partida));
+                          const isValid = !Number.isNaN(date.getTime());
+                          return (
+                            <Typography variant="caption" color="text.secondary">
+                              {isValid ? format(date, 'dd/MM/yyyy', { locale: ptBR }) : String(v.data_partida)}
+                            </Typography>
+                          );
+                        })()}
                       </Box>
                     ))}
                   </Box>

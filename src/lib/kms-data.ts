@@ -119,6 +119,71 @@ export function somarLancamentos(lancamentos: LancamentoKm[]): number {
   return lancamentos.reduce((s, l) => s + l.km, 0);
 }
 
+/** Formato de viagem para exibição (ex.: últimas viagens no Dashboard). */
+export interface ViagemPlanilha {
+  nome_apelido: string;
+  descricao_trajeto?: string;
+  data_partida?: string;
+  km_considerado?: number;
+}
+
+/**
+ * Retorna as últimas N viagens da planilha de KM, ordenadas por data de partida (mais recente primeiro).
+ */
+export async function getUltimasViagensPlanilha(limit: number): Promise<ViagemPlanilha[]> {
+  const sourceId = await getKmPlanilhaSourceId();
+  if (!sourceId) return [];
+
+  const { data: rows, error } = await supabase
+    .from('nc_data_dynamic')
+    .select('row_data')
+    .eq('source_id', sourceId);
+  if (error) throw error;
+  if (!rows?.length) return [];
+
+  const viagens: ViagemPlanilha[] = (rows as { row_data: Record<string, unknown> }[]).map((row) => {
+    const rd = row?.row_data ?? {};
+    const rawKm = rd['km_a_ser_considerado'] ?? rd['km_considerado'] ?? 0;
+    return {
+      nome_apelido: String(rd['nome/apelido'] ?? rd['nome_apelido'] ?? '').trim(),
+      descricao_trajeto: String(rd['descrição_do_trajeto'] ?? rd['descricao_trajeto'] ?? '').trim() || undefined,
+      data_partida: rd['data_partida'] != null ? String(rd['data_partida']) : undefined,
+      km_considerado: parseKmValue(rawKm) || undefined,
+    };
+  });
+
+  viagens.sort((a, b) => {
+    const da = a.data_partida ?? '';
+    const db = b.data_partida ?? '';
+    return db.localeCompare(da);
+  });
+  return viagens.slice(0, limit);
+}
+
+/**
+ * Retorna o total geral de KM: somatório de todos os lançamentos da planilha de KM
+ * (cada linha em nc_data_dynamic = um lançamento; soma de todos os km_a_ser_considerado/km_considerado).
+ */
+export async function getTotalGeralKmPlanilha(): Promise<number> {
+  const sourceId = await getKmPlanilhaSourceId();
+  if (!sourceId) return 0;
+
+  const { data: rows, error } = await supabase
+    .from('nc_data_dynamic')
+    .select('row_data')
+    .eq('source_id', sourceId);
+  if (error) throw error;
+  if (!rows?.length) return 0;
+
+  let total = 0;
+  for (const row of rows as { row_data: Record<string, unknown> }[]) {
+    const rd = row?.row_data ?? {};
+    const rawKm = rd['km_a_ser_considerado'] ?? rd['km_considerado'] ?? 0;
+    total += parseKmValue(rawKm);
+  }
+  return total;
+}
+
 /**
  * Retorna totais de km por membro (chave = nome do membro).
  * Uma única busca na planilha; cada linha é atribuída ao primeiro nome da lista que bater.
