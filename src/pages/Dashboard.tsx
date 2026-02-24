@@ -534,7 +534,7 @@ export default function Dashboard() {
                 {viagensRecentes.length > 0 ? (
                   <Box sx={{ mt: 1 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-                      Últimas 3 viagens (planilha, por data)
+                      Últimas 3 viagens do ano atual (planilha, por data)
                     </Typography>
                     {viagensRecentes.map((v, i) => (
                       <Box

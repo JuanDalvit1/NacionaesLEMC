@@ -128,7 +128,22 @@ export interface ViagemPlanilha {
 }
 
 /**
- * Retorna as últimas N viagens da planilha de KM, ordenadas por data de partida (mais recente primeiro).
+ * Extrai o ano de uma string de data (aceita YYYY-MM-DD, DD/MM/YYYY, ou ano no início).
+ */
+function anoDeDataPartida(dataPartida: string | undefined): number | null {
+  if (!dataPartida?.trim()) return null;
+  const s = dataPartida.trim();
+  const iso = s.match(/^(\d{4})-\d{1,2}-\d{1,2}/);
+  if (iso) return parseInt(iso[1], 10);
+  const ddmmyyyy = s.match(/(\d{4})$|\d{1,2}\/\d{1,2}\/(\d{4})/);
+  if (ddmmyyyy) return parseInt(ddmmyyyy[1] ?? ddmmyyyy[2] ?? '', 10);
+  const doisDigitos = s.match(/^(\d{2})-\d{2}-\d{2}/);
+  if (doisDigitos) return 2000 + parseInt(doisDigitos[1], 10);
+  return null;
+}
+
+/**
+ * Retorna as últimas N viagens da planilha de KM do ano atual, ordenadas por data de partida (mais recente primeiro).
  */
 export async function getUltimasViagensPlanilha(limit: number): Promise<ViagemPlanilha[]> {
   const sourceId = await getKmPlanilhaSourceId();
@@ -141,16 +156,19 @@ export async function getUltimasViagensPlanilha(limit: number): Promise<ViagemPl
   if (error) throw error;
   if (!rows?.length) return [];
 
-  const viagens: ViagemPlanilha[] = (rows as { row_data: Record<string, unknown> }[]).map((row) => {
-    const rd = row?.row_data ?? {};
-    const rawKm = rd['km_a_ser_considerado'] ?? rd['km_considerado'] ?? 0;
-    return {
-      nome_apelido: String(rd['nome/apelido'] ?? rd['nome_apelido'] ?? '').trim(),
-      descricao_trajeto: String(rd['descrição_do_trajeto'] ?? rd['descricao_trajeto'] ?? '').trim() || undefined,
-      data_partida: rd['data_partida'] != null ? String(rd['data_partida']) : undefined,
-      km_considerado: parseKmValue(rawKm) || undefined,
-    };
-  });
+  const anoAtual = new Date().getFullYear();
+  const viagens: ViagemPlanilha[] = (rows as { row_data: Record<string, unknown> }[])
+    .map((row) => {
+      const rd = row?.row_data ?? {};
+      const rawKm = rd['km_a_ser_considerado'] ?? rd['km_considerado'] ?? 0;
+      return {
+        nome_apelido: String(rd['nome/apelido'] ?? rd['nome_apelido'] ?? '').trim(),
+        descricao_trajeto: String(rd['descrição_do_trajeto'] ?? rd['descricao_trajeto'] ?? '').trim() || undefined,
+        data_partida: rd['data_partida'] != null ? String(rd['data_partida']) : undefined,
+        km_considerado: parseKmValue(rawKm) || undefined,
+      };
+    })
+    .filter((v) => anoDeDataPartida(v.data_partida) === anoAtual);
 
   viagens.sort((a, b) => {
     const da = a.data_partida ?? '';
