@@ -5,7 +5,6 @@ import { useTabelasHeader } from '../contexts/TabelasHeaderContext';
 import { fetchMemberRows, filterMembrosAtivosComNomeValido } from '../lib/membros-data';
 import { contarMembros, tipoMembro } from '../lib/membro-stats';
 import { getTotalGeralKmPlanilha, getUltimasViagensPlanilha } from '../lib/kms-data';
-import { supabase } from '../lib/supabase';
 import { format, parseISO, isBefore, isAfter, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {

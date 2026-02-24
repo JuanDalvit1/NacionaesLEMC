@@ -34,7 +34,7 @@ const DRAWER_WIDTH_EXPANDED = 260;
 const DRAWER_WIDTH_COLLAPSED = 72;
 
 /** Versão exibida no header (manter alinhada ao package.json). */
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.0.6';
 
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
