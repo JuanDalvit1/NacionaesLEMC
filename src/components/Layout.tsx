@@ -402,20 +402,39 @@ export default function Layout() {
         </AppBar>
         <Box
           component="main"
-          sx={(theme) => ({
-            flexGrow: 1,
-            p: { xs: 1.5, sm: 2, md: 3 },
-            minHeight: 0,
-            overflow: 'auto',
-            background: theme.palette.mode === 'dark'
-              ? 'radial-gradient(ellipse at 50% 0%, rgba(120,120,255,0.06) 0%, transparent 50%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 20%)'
-              : 'radial-gradient(ellipse at 50% 0%, rgba(14,165,233,0.06) 0%, transparent 50%), linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 12%)',
-            transition: (t) =>
-              t.transitions.create('margin', {
-                duration: t.transitions.duration.enteringScreen,
-                easing: t.transitions.easing.sharp,
-              }),
-          })}
+          sx={(theme) => {
+            const isDark = theme.palette.mode === 'dark';
+            const thumb = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
+            const thumbHover = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)';
+            const track = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+            return {
+              flexGrow: 1,
+              p: { xs: 1.5, sm: 2, md: 3 },
+              minHeight: 0,
+              overflow: 'auto',
+              background: isDark
+                ? 'radial-gradient(ellipse at 50% 0%, rgba(120,120,255,0.06) 0%, transparent 50%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 20%)'
+                : 'radial-gradient(ellipse at 50% 0%, rgba(14,165,233,0.06) 0%, transparent 50%), linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 12%)',
+              transition: (t) =>
+                t.transitions.create('margin', {
+                  duration: t.transitions.duration.enteringScreen,
+                  easing: t.transitions.easing.sharp,
+                }),
+              // Scrollbar lateral alinhada ao tema (Chrome/Edge/Safari)
+              '&::-webkit-scrollbar': { width: 10 },
+              '&::-webkit-scrollbar-track': { background: track, borderRadius: 5 },
+              '&::-webkit-scrollbar-thumb': {
+                background: thumb,
+                borderRadius: 5,
+                border: '2px solid transparent',
+                backgroundClip: 'padding-box',
+              },
+              '&::-webkit-scrollbar-thumb:hover': { background: thumbHover },
+              // Firefox
+              scrollbarWidth: 'thin',
+              scrollbarColor: `${thumb} ${track}`,
+            };
+          }}
         >
         <Outlet />
           <Fab

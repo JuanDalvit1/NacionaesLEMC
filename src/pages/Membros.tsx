@@ -49,6 +49,12 @@ function fmtData(v: unknown): string {
   return s;
 }
 
+const LINHAS_DATA = [
+  { label: 'Data de 14', key: 'data_admissao', alt: 'DATA_ADMISSAO' },
+  { label: 'Data de PP', key: 'data_pp', alt: 'DATA_PP' },
+  { label: 'Data de Full', key: 'data_full_patch', alt: 'DATA_FULL_PATCH' },
+] as const;
+
 function MembroCard({
   m,
   evolucaoNome,
@@ -59,7 +65,6 @@ function MembroCard({
   const tipo = tipoMembro(m);
   const nome = String(m.nome_colete ?? m.nome_completo ?? m.NOME_COLETE ?? m.NOME_COMPLETO ?? '-');
   const graduacao = String(m.graduacao ?? m.GRADUACAO ?? '-');
-  const dataAdmissao = fmtData(m.data_admissao ?? m.DATA_ADMISSAO);
   const tsFrh = String(m.ts_frh ?? m.TS_FRH ?? '-');
 
   return (
@@ -70,6 +75,7 @@ function MembroCard({
         textDecoration: 'none',
         color: 'inherit',
         height: '100%',
+        minHeight: 200,
         display: 'flex',
         flexDirection: 'column',
         transition: (theme) =>
@@ -112,10 +118,12 @@ function MembroCard({
             <Chip size="small" label={graduacao} variant="filled" sx={{ height: 22, fontSize: '0.7rem' }} />
           )}
         </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, mt: 'auto' }}>
-          <Typography variant="caption" color="text.secondary">
-            Entrada: {dataAdmissao}
-          </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, mt: 'auto', minHeight: 52 }}>
+          {LINHAS_DATA.map(({ label, key, alt }) => (
+            <Typography key={key} variant="caption" color="text.secondary">
+              {label}: {fmtData((m[key] ?? m[alt]) as unknown)}
+            </Typography>
+          ))}
           {tsFrh !== '-' && (
             <Typography variant="caption" color="text.secondary">
               Tipo sang.: {tsFrh}

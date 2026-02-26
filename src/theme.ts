@@ -56,7 +56,37 @@ export function getTheme(mode: 'light' | 'dark') {
       MuiCssBaseline: {
         styleOverrides: {
           html: { fontSize: BASE_FONT_SIZE },
-          body: { fontSize: '0.875rem' },
+          body: {
+            fontSize: '0.875rem',
+            // Scrollbar global alinhada ao tema (evita barra branca no tema escuro)
+            ...(isDark
+              ? {
+                  scrollbarWidth: 'thin' as const,
+                  scrollbarColor: 'rgba(255,255,255,0.25) rgba(255,255,255,0.05)',
+                  '&::-webkit-scrollbar': { width: 10 },
+                  '&::-webkit-scrollbar-track': { background: 'rgba(255,255,255,0.05)', borderRadius: 5 },
+                  '&::-webkit-scrollbar-thumb': {
+                    background: 'rgba(255,255,255,0.25)',
+                    borderRadius: 5,
+                    border: '2px solid transparent',
+                    backgroundClip: 'padding-box',
+                  },
+                  '&::-webkit-scrollbar-thumb:hover': { background: 'rgba(255,255,255,0.4)' },
+                }
+              : {
+                  scrollbarWidth: 'thin' as const,
+                  scrollbarColor: 'rgba(0,0,0,0.2) rgba(0,0,0,0.05)',
+                  '&::-webkit-scrollbar': { width: 10 },
+                  '&::-webkit-scrollbar-track': { background: 'rgba(0,0,0,0.05)', borderRadius: 5 },
+                  '&::-webkit-scrollbar-thumb': {
+                    background: 'rgba(0,0,0,0.2)',
+                    borderRadius: 5,
+                    border: '2px solid transparent',
+                    backgroundClip: 'padding-box',
+                  },
+                  '&::-webkit-scrollbar-thumb:hover': { background: 'rgba(0,0,0,0.35)' },
+                }),
+          },
         },
       },
       MuiAppBar: {
